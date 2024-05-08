@@ -1,161 +1,214 @@
 import 'package:flutter/material.dart';
-import 'dart:async';
-import 'dart:convert';
 import 'package:http/http.dart' as http;
-import 'package:app/post.dart';
+import 'dart:convert';
 
-void main(){
-  runApp(const MyApp());
+void main() {
+  runApp(MyApp());
 }
 
 class MyApp extends StatelessWidget {
-  const MyApp({Key? key}): super(key: key);
-
   @override
-  Widget build (BuildContext context) => MaterialApp(
-    debugShowCheckedModeBanner: false,
-    title: 'http package',
-    theme: ThemeData(
-      primarySwatch:Colors.amber,
-      primaryColor:Colors.blue,
-    ),
-    home: const HomeWidget(),
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      title: 'Course Manager',
+      theme: ThemeData(
+        primarySwatch: Colors.blue,
+      ),
+      home: CourseManager(),
     );
-}
-
-//GET API
-Future<Course> fetchCourse() async {
-  final uri = Uri.parse("https://jsonplaceholder.typicode.com/posts/1");
-  final response = await http.get(uri);
-
-  if (response.statusCode == 200){
-    return Course.fromJson(json.decode(response.body));
-  } else{
-    throw Exception('Failed to load courses');
   }
 }
 
-//POST API
-Future<Course> createCourse(String title) async {
-  Map<String, dynamic> request = {
-    'title': title,
-    'id' : "222"
-  };
-  final uri = Uri.parse("https://jsonplaceholder.typicode.com/posts");
-  final response = await http.post(uri, body:request);
+class Course {
+  final int id;
+  final String name;
 
-  if (response.statusCode == 201){
-    return Course.fromJson(json.decode(response.body));
-  } else{
-    throw Exception('failed to post course');
-  }
+  Course({required this.id, required this.name});
 }
 
-//UPDATE API
-Future<Course> updateCourse(String title) async{
-  Map<String, dynamic> request = {
-    'id': "222",
-    'title': title,
-  };
-  final uri = Uri.parse("https://jsonplaceholder.typicode.com/posts/1");
-  final response = await http.post(uri, body:request);
-
-  if (response.statusCode == 200){
-    return Course.fromJson(json.decode(response.body));
-  } else{
-    throw Exception('failed to post course');
-  }
+class CourseManager extends StatefulWidget {
+  @override
+  _CourseManagerState createState() => _CourseManagerState();
 }
 
-class HomeWidget extends StatefulWidget {
-  const HomeWidget({Key? key}) : super(key: key);
+class _CourseManagerState extends State<CourseManager> {
+  List<Course> courses = [];
+  TextEditingController courseController = TextEditingController();
 
   @override
-  State<HomeWidget> createState() => _HomeWidgetState();
-}
-
-class _HomeWidgetState extends State<HomeWidget> {
-  Future<Course?>? post;
-
-  void clickGetButton(){
-    setState(() {
-      post = fetchCourse();
-    });
+  void initState() {
+    super.initState();
+    fetchCourses();
   }
 
-  void clickPostButton(){
-    setState(() {
-      post = createCourse("example");
-    });
+  Future<void> fetchCourses() async {
+    print('Fetching courses...');
+    try {
+      final response = await http.get(Uri.parse('http://localhost:5000/courses'));
+      print('Response status code: ${response.statusCode}');
+      print('Response body: ${response.body}');
+      if (response.statusCode == 200) {
+        final dynamic responseData = jsonDecode(response.body);
+        if (responseData != null && responseData['Message'] != null) {
+          final List<dynamic> data = responseData['Message'];
+          setState(() {
+            courses = data
+                .map((course) => Course(
+                    id: course['course_id'], name: course['course_name']))
+                .toList();
+          });
+          print('Courses fetched successfully: $courses');
+        } else {
+          print('No data or data field is null');
+          setState(() {
+            courses = [];
+          });
+        }
+      } else {
+        throw Exception(
+            'Failed to load courses. Status code: ${response.statusCode}');
+      }
+    } catch (e) {
+      print('Error fetching courses: $e');
+      // Handle error here, such as showing a snackbar or retry button
+    }
   }
 
-  void clickUpdateButton(){
-    setState(() {
-      post = updateCourse("course update");
-    });
+  Future<void> createCourse(String courseName) async {
+    final response = await http.post(
+      Uri.parse('http://localhost:5000/course'),
+      headers: <String, String>{
+        'Content-Type': 'application/json; charset=UTF-8',
+      },
+      body: jsonEncode(<String, String>{'course': courseName}),
+    );
+
+    if (response.statusCode == 200) {
+      fetchCourses(); // Refresh the course list after creating a new course
+    } else {
+      throw Exception('Failed to create course');
+    }
+  }
+
+  Future<void> deleteCourse(int courseId) async {
+    final response = await http.delete(Uri.parse('http://localhost:5000/course/$courseId'));
+    if (response.statusCode == 200) {
+      // If deletion successful, fetch updated list of courses
+      fetchCourses();
+    } else {
+      throw Exception('Failed to delete course. Status code: ${response.statusCode}');
+    }
+  }
+
+  Future<void> editCourse(int courseId, String newName) async {
+  try {
+    final response = await http.put(
+      Uri.parse('http://localhost:5000/course/$courseId'),
+      headers: <String, String>{
+        'Content-Type': 'application/json; charset=UTF-8',
+      },
+      body: jsonEncode(<String, String>{'course': newName}),
+    );
+
+    if (response.statusCode == 200) {
+      fetchCourses(); // Refresh the course list after editing the course
+    } else {
+      throw Exception('Failed to edit course');
+    }
+  } catch (e) {
+    print('Error editing course: $e');
+    // Handle error here, such as showing a snackbar or retry button
+  }
   }
 
   @override
-  Widget build(BuildContext) => Scaffold(
-    resizeToAvoidBottomInset: false,
-    appBar: AppBar(
-      title: const Center(
-        child: Text('courses'),
-        ),
-    ),
-    body: SizedBox(
-      height: 500,
-      width: double.infinity,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.center,
-        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text('Course Manager'),
+      ),
+      body: Column(
         children: [
-          FutureBuilder<Course?>(
-            future: post,
-            builder: (context, snapshot){
-              if (snapshot.connectionState == ConnectionState.waiting) {
-                return const CircularProgressIndicator();
-              } else if (snapshot.connectionState == ConnectionState.none){
-                return Container();
-              } else {
-                if (snapshot.hasData){
-                  return buildDataWidget(context, snapshot);
-                } else if (snapshot.hasError){
-                  return Text("${snapshot.error}");
-                } else {
-                  return Container();
-                }
-                
-              }
+          SizedBox(height: 20),
+          Padding(
+            padding: const EdgeInsets.all(8.0),
+            child: TextField(
+              controller: courseController,
+              decoration: InputDecoration(
+                labelText: 'Enter Course Name',
+                border: OutlineInputBorder(),
+              ),
+            ),
+          ),
+          SizedBox(height: 20),
+          ElevatedButton(
+            onPressed: () {
+              createCourse(courseController.text);
+              courseController.clear();
             },
+            child: Text('Add Course'),
           ),
-          SizedBox(
-            width: 200,
-            child: ElevatedButton(
-              onPressed: () => clickGetButton(),
-              child: const Text("GET"),
-              ),
+          SizedBox(height: 20),
+          Expanded(
+            child: ListView.builder(
+              itemCount: courses.length,
+              itemBuilder: (context, index) {
+                return ListTile(
+                  title: Text(courses[index].name),
+                  subtitle: Text('ID: ${courses[index].id}'),
+                  trailing: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      IconButton(
+                        icon: Icon(Icons.edit),
+                        onPressed: () {
+                          // Show a dialog or navigate to another screen to edit the course name
+                          TextEditingController _editCourseController = TextEditingController(text: courses[index].name); // Declare a new TextEditingController
+                          showDialog(
+                            context: context,
+                            builder: (context) => AlertDialog(
+                              title: Text('Edit Course'),
+                              content: TextField(
+                                controller: _editCourseController, // Use the newly created TextEditingController
+                                onChanged: (value) {
+                                  // Update the text in the TextEditingController
+                                  _editCourseController.text = value;
+                                },
+                              ),
+                              actions: [
+                                TextButton(
+                                  onPressed: () {
+                                    Navigator.pop(context); // Close the dialog
+                                  },
+                                  child: Text('Cancel'),
+                                ),
+                                TextButton(
+                                  onPressed: () {
+                                    // Update the course name and close the dialog
+                                    editCourse(courses[index].id, _editCourseController.text); // Pass the text from the TextEditingController
+                                    Navigator.pop(context);
+                                  },
+                                  child: Text('Save'),
+                                ),
+                              ],
+                            ),
+                          );
+                        },
+                      ),
+                      IconButton(
+                        icon: Icon(Icons.delete),
+                        onPressed: () {
+                          deleteCourse(courses[index].id);
+                        },
+                      ),
+                    ],
+                  ),
+                );
+              },
+            ),
           ),
-          SizedBox(
-            width: 200,
-            child: ElevatedButton(
-              onPressed: () => clickGetButton(),
-              child: const Text("POST"),
-              ),
-          ),
-          ],
-      ))
-  );
+        ],
+      ),
+    );
+  }
 }
-Widget buildDataWidget(context, snapshot) => Column(
-  mainAxisAlignment: MainAxisAlignment.center,
-  crossAxisAlignment: CrossAxisAlignment.center,
-  children: [
-    Padding(
-      padding: const EdgeInsets.all(15.0),
-      child: Text(
-        snapshot.data.title,
-      ),
-      ),
-  ],
-);
