@@ -1,17 +1,18 @@
 from flask import Flask, jsonify, request
 import sys
 import psycopg2
-
+from flask_cors import CORS
 # Database connection
 
 db_connection = psycopg2.connect(
-        dbname='postgres',
+        dbname='api_db',
         user='postgres',
         password='root',
         host='localhost',
     )
 
 app = Flask(__name__)
+CORS(app)
 
 def spcall(qry, param, commit=False):
     try:
@@ -39,6 +40,7 @@ def get_courses():
 def create_course():
     data = request.get_json()
     course = data.get('course')
+    print(data, course)
     try:
         if course:
             res=spcall('insert_course', (course, ), commit=True)
@@ -64,12 +66,12 @@ def update_course(course_id):
     try:
         data = request.get_json()
         course = data.get('course')
-        print(course, course_id)
-        
+        print(data)
+
         if course:
             res = spcall('update_course_by_id', (course_id, course), commit=True)
             return jsonify({"status": "ok", 
-                'message': 'course updated successfully'})
+                'message': course})
 
     except Exception as e:
         return jsonify({"status": "error", "message": str(e)})
