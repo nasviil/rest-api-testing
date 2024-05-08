@@ -1,0 +1,120 @@
+@import url("https://fonts.googleapis.com/css2?family=Rubik&display=swap");
+
+*{
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  font-family: 'Rubik', sans-serif;
+}
+
+body {
+  font-family: 'Rubik', sans-serif;
+  overflow: hidden;
+}
+
+.table{
+  width: 100%;
+}
+
+.table-header{
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px;
+  background-color: rgb(240, 240, 240);
+}
+
+.table-header p{
+  color: #000000;
+}
+
+button{
+  outline: none;
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+  padding: 10px;
+  color: #ffffff;
+}
+
+.edit-button{
+  background-color: #0298cf;
+  margin-right: 20px;
+}
+
+.delete-button{
+  background-color: #f80000;
+}
+
+.add-new{
+  padding: 10px 20px;
+  color: #ffffff;
+  background-color: #0298cf;
+}
+
+input{
+  min-width: 300px;
+  padding: 10px 20px;
+  margin: 0 10px;
+  outline: none;
+  border: 1px solid #0298cf;
+  border-radius: 10px;
+  color: #0298cf;
+}
+
+::placeholder{
+  color: #0298cf;
+}
+
+.table-section{
+  height: 650px;
+  overflow: auto;
+}
+
+table {
+  width: 100%;
+  table-layout: fixed;
+  min-width: 1000px;
+  border-collapse: collapse;
+}
+
+thead th{
+  position: sticky;
+  top: 0;
+  background-color: #f6f9fc;
+  color: #8493a5;
+  font-size: 15px;
+}
+
+th, td{
+  border-bottom: 1px solid #dddddd;
+  padding: 10px 20px;
+  word-break: break-all;
+  text-align: center;
+}
+
+tr:hover td{
+  color: #0298cf;
+  cursor: pointer;
+  background-color:#f6f9fc;
+}
+
+.action-buttons{
+  display: flex;
+  justify-content: center;
+}
+
+.container{
+  height: 500px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+}
+
+.form-edit{
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+}
